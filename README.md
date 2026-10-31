@@ -1,20 +1,27 @@
 # NineSoft — NINE-9
 
-**Status (31 Oct 2026):** The full application source has **NOT** been pushed to this repository. No Android/Windows/Web build has run here, and this repository is **not deployment-ready**.
+**Current status (1 November 2026): Source upload and CI execution are blocked.** This GitHub repository is PUBLIC. The complete NineSoft accounting source is **not** hosted here. Do not deploy from this repository.
 
-## Latest trial source package (delivered privately to the owner)
-- `NineSoft-Stage5-Weight-UI-Review-20261031.zip`
-- SHA-256: `dbb7e8e23b17ff07f2888cdd77ccf31ba10f48f43bf260797f95a4296f3d70ca`
-- Files: 649 (Flutter, Laravel, Arabic docs, tests, and CI workflows).
-- Includes the owner's reference entry UI, unit conversion (1kg=1000g), cashier **sell by amount** (500 YER amount input), ledger-safe stock deduction, the Web **Update Release** button (does not clear IndexedDB/localStorage/offline queues), and accounting fixes from earlier stages.
-- This ZIP is attached to the owner's ChatGPT conversation, **not** publicly accessible from GitHub.
+## Latest staging handoff
 
-## Next operations for Codex
-1. Receive and extract the full Stage5 ZIP, review `CHANGES_AR.md`, `STAGE5_TEST_RESULTS_AR.md`, and `CODEX_FINAL_HANDOFF_AR.md`.
-2. **Make this repository Private** before uploading the company's proprietary source/assets. Do not upload live .env, keys, or customer databases.
-3. Run `tools/publish_staging_github.sh` after GitHub CLI login; the script refuses public repositories and existing staging branches. It pushes only to `staging/ninesoft-stage5`.
-4. Configure a separate `NINESOFT_STAGING_API_BASE_URL` repository variable (HTTPS, NEVER the production API). Run and fix GitHub Actions: `accounting-integrity.yml` (SQLite + PostgreSQL) and `flutter-ci.yml` (Flutter analyze/tests, Web/Windows/Android builds).
-5. Validate the full financial cycle on staging, including old data, outbox retries, two devices, stock and journal balances, 500 YER weighed item, and browser cache update with offline data retained.
-6. **Do not merge or deploy to the live Hostinger server or database without explicit separate authorization** and proven backup/restore.
+The owner has received the private source archive `NineSoft-Stage6-CI-Prepared-20261101.zip` in ChatGPT.
 
-**Verified locally:** PHP syntax 176 files; pure accounting checks, weight conversions, static checks, and Node mock browser update. **NOT verified:** full Laravel DB suite; Flutter analysis/tests; APK/EXE/Web builds or cross-device sync. Do not describe the trial as production-ready.
+- SHA-256: `306ffcab06b7bfca9b41a23e5d522e0a422cd64c0c2613eafe48f83840ab905f`
+- 654 files; Flutter + Laravel; accounting, weight/unit conversion, source, tests, CI workflows and Arabic documentation.
+- Independent pure accounting checks passed locally; 176 PHP syntax checks passed.
+- **Laravel integration tests:** not run (missing Composer/vendor and database drivers in the editing environment).
+- **Flutter analyze/tests and APK/Windows/Web builds:** not run (Flutter, Dart, Android SDK and Windows runner are unavailable).
+- **GitHub Actions:** not run here. Do not claim releases/artifacts exist.
+
+## Safe next steps
+
+1. The repository owner must change **Settings > General > Danger Zone > Change repository visibility > Private**. Do **not** upload proprietary source while public.
+2. Extract the Stage6 ZIP into a separate working folder and run its `tools/verification/package_preflight.py` and other independent test scripts.
+3. Use `tools/publish_staging_github.sh` (Linux/Git Bash) or `tools/publish_staging_github.ps1` (Windows) to import the complete sanitized source on **new branch** `staging/ninesoft-stage6-ci`. Both scripts refuse PUBLIC repositories and must not overwrite an existing branch.
+4. Set a real isolated HTTPS GitHub Actions repository variable `NINESOFT_STAGING_API_BASE_URL` (a host labeled staging, stage, test, dev, sandbox, preview or qa). Production APIs and placeholders are forbidden.
+5. The source includes GitHub Actions that run Laravel PHPUnit on SQLite and PostgreSQL plus Flutter analysis/tests. **Web/Android/Windows builds are gated on both test suites passing.** Retrieve actual downloadable artifacts only after CI succeeds.
+6. Validate accounting, stock, conflict resolution, two-device sync and offline replays on staging. Production Hostinger deployment and database migrations require separate explicit authorization and verified backups.
+
+Detailed directions are included privately within Stage6 ZIP: `CODEX_STAGE6_CI_HANDOFF_AR.md`, `STAGE6_CI_EXECUTION_AR.md`, `CHANGES_AR.md` and `VERIFICATION_STATUS.json`.
+
+**No production system, Hostinger server or live financial database was changed in this stage.**
