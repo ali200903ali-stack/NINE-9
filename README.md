@@ -6,7 +6,7 @@
 - Base: NineSoft `0.29.27+75` (Flutter + Laravel).
 - Trial source ZIP: `NineSoft-Stage2-Source-Trial-20261031.zip`, delivered in the owner's ChatGPT conversation (not publicly hosted).
 - The ZIP contains 607 source/project files, with 12 modified and 10 new files.
-- SHA-256 (full trial ZIP): `d26103d5470243c519e08ff6135d5224fec3a4a76c3d968b88d6e55ade369a35`. See `STAGING_STATUS_AR.md` for exact current state.
+- SHA-256 (full trial ZIP): `4362f6d89159b1d95ca25351204df7d86e0b414f9c3c4ba4dc58100bb87b6d1a`. See `STAGING_STATUS_AR.md` for exact current state.
 - Contents: original project layout, `CHANGES_AR.md`, `BUILD_AND_TEST_AR.md`, purchase outbox and tests, GitHub Actions workflows.
 - No live Hostinger server, production database or production credentials were changed or accessed during this correction.
 
