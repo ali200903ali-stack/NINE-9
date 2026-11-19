@@ -11,6 +11,9 @@ done
 
 export AWS_DEFAULT_REGION="${S3_REGION:-auto}"
 export AWS_EC2_METADATA_DISABLED=true
+export AWS_CONFIG_FILE="${AWS_CONFIG_FILE:-/tmp/qodynex-aws-config}"
+endpoint="${S3_ENDPOINT%/}"
+aws configure set default.s3.addressing_style path
 
 retention_days="${RETENTION_DAYS:-30}"
 backup_prefix="${BACKUP_PREFIX:-postgres}"
@@ -54,25 +57,36 @@ cat > "$metadata" <<JSON
 }
 JSON
 
-remote="s3://${S3_BUCKET}/${backup_prefix}/${stamp}"
-for file in "$dump" "$toc" "$checksum" "$metadata"; do
-  aws --endpoint-url "$S3_ENDPOINT" s3 cp "$file" "$remote/$(basename "$file")" --only-show-errors
-  echo "Uploaded $(basename "$file")"
-done
+put_object() {
+  local file="$1"
+  local key="$2"
+  aws --endpoint-url "$endpoint" s3api put-object \
+    --bucket "$S3_BUCKET" \
+    --key "$key" \
+    --body "$file" \
+    --output json >/dev/null
+  echo "Uploaded ${key}"
+}
 
-aws --endpoint-url "$S3_ENDPOINT" s3 cp "$metadata" \
-  "s3://${S3_BUCKET}/${backup_prefix}/latest.json" --only-show-errors
+remote_prefix="${backup_prefix}/${stamp}"
+put_object "$dump" "${remote_prefix}/$(basename "$dump")"
+put_object "$toc" "${remote_prefix}/$(basename "$toc")"
+put_object "$checksum" "${remote_prefix}/$(basename "$checksum")"
+put_object "$metadata" "${remote_prefix}/$(basename "$metadata")"
+put_object "$metadata" "${backup_prefix}/latest.json"
 
 cutoff="$(date -u -d "-${retention_days} days" +%Y-%m-%dT%H:%M:%SZ)"
-aws --endpoint-url "$S3_ENDPOINT" s3api list-objects-v2 \
+aws --endpoint-url "$endpoint" s3api list-objects-v2 \
   --bucket "$S3_BUCKET" \
   --prefix "${backup_prefix}/" \
   --output json \
 | jq -r --arg cutoff "$cutoff" '.Contents[]? | select(.LastModified < $cutoff) | .Key' \
 | while IFS= read -r key; do
     [[ -n "$key" && "$key" != "${backup_prefix}/latest.json" ]] || continue
-    aws --endpoint-url "$S3_ENDPOINT" s3api delete-object --bucket "$S3_BUCKET" --key "$key" >/dev/null
+    aws --endpoint-url "$endpoint" s3api delete-object \
+      --bucket "$S3_BUCKET" \
+      --key "$key" >/dev/null
     echo "Deleted expired object: $key"
   done
 
-echo "Backup completed successfully: ${remote}"
+echo "Backup completed successfully: s3://${S3_BUCKET}/${remote_prefix}"
