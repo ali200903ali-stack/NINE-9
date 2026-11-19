@@ -73,20 +73,32 @@ put_object "$dump" "${remote_prefix}/$(basename "$dump")"
 put_object "$toc" "${remote_prefix}/$(basename "$toc")"
 put_object "$checksum" "${remote_prefix}/$(basename "$checksum")"
 put_object "$metadata" "${remote_prefix}/$(basename "$metadata")"
-put_object "$metadata" "${backup_prefix}/latest.json"
+
+if put_object "$metadata" "${backup_prefix}/latest.json"; then
+  echo "Updated latest backup pointer"
+else
+  echo "WARNING: Core backup is complete, but latest.json could not be updated" >&2
+fi
 
 cutoff="$(date -u -d "-${retention_days} days" +%Y-%m-%dT%H:%M:%SZ)"
-aws --endpoint-url "$endpoint" s3api list-objects-v2 \
+listing="$work/objects.json"
+if aws --endpoint-url "$endpoint" s3api list-objects-v2 \
   --bucket "$S3_BUCKET" \
   --prefix "${backup_prefix}/" \
-  --output json \
-| jq -r --arg cutoff "$cutoff" '.Contents[]? | select(.LastModified < $cutoff) | .Key' \
-| while IFS= read -r key; do
-    [[ -n "$key" && "$key" != "${backup_prefix}/latest.json" ]] || continue
-    aws --endpoint-url "$endpoint" s3api delete-object \
-      --bucket "$S3_BUCKET" \
-      --key "$key" >/dev/null
-    echo "Deleted expired object: $key"
-  done
+  --output json > "$listing"; then
+  jq -r --arg cutoff "$cutoff" '.Contents[]? | select(.LastModified < $cutoff) | .Key' "$listing" \
+  | while IFS= read -r key; do
+      [[ -n "$key" && "$key" != "${backup_prefix}/latest.json" ]] || continue
+      if aws --endpoint-url "$endpoint" s3api delete-object \
+        --bucket "$S3_BUCKET" \
+        --key "$key" >/dev/null; then
+        echo "Deleted expired object: $key"
+      else
+        echo "WARNING: Could not delete expired object: $key" >&2
+      fi
+    done
+else
+  echo "WARNING: Core backup is complete, but retention cleanup could not list objects" >&2
+fi
 
 echo "Backup completed successfully: s3://${S3_BUCKET}/${remote_prefix}"
