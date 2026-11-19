@@ -1,0 +1,23 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS prepare
+WORKDIR /runtime
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl unzip ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl --fail --location --retry 3 --retry-delay 2 \
+      https://github.com/ali200903ali-stack/NINE-9/releases/download/qodynex-business-runtime-v0.1.0/qodynex-server.zip \
+      --output /tmp/qodynex-server.zip \
+    && echo "545f6ec49edd06e6f9ffd74ee59d8766b5e0dbc60312e8122524cf6bc94ba085  /tmp/qodynex-server.zip" | sha256sum -c - \
+    && unzip -q /tmp/qodynex-server.zip -d /runtime \
+    && test -f /runtime/Qodynex.Server.dll \
+    && test -f /runtime/Qodynex.Server.runtimeconfig.json
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+COPY --from=prepare /runtime ./
+
+ENV ASPNETCORE_HTTP_PORTS=8080
+EXPOSE 8080
+USER $APP_UID
+ENTRYPOINT ["dotnet", "Qodynex.Server.dll"]
