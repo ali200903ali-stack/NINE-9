@@ -1,0 +1,42 @@
+name: Publish Qodynex Business runtime
+
+on:
+  push:
+    branches: [qodynex-business-runtime]
+    paths: [.github/workflows/publish-qodynex-runtime.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TAG: qodynex-business-runtime-v0.1.0
+      ASSET: qodynex-server.zip
+      EXPECTED_SHA256: 545f6ec49edd06e6f9ffd74ee59d8766b5e0dbc60312e8122524cf6bc94ba085
+      RUNTIME_URL: https://sdmntprindiasocentral.oaiusercontent.com/files/00000000-b014-8211-9b16-f67bd005f136/raw?se=2026-11-19T12%3A40%3A09Z&sp=r&sv=2026-06-06&sr=b&scid=bb8bc52e-d4cb-57c9-9c8c-754385800486&skoid=b7fc319f-b93c-4fac-ba5f-14fdc3f9209f&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-19T07%3A53%3A26Z&ske=2026-11-20T07%3A53%3A26Z&sks=b&skv=2026-06-06&sig=HRIqTsFVEMugFLHms3Yv5wZEDfx/HGa5jXhxuHo1TCo%3D
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Download verified compiled server artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 2 "$RUNTIME_URL" --output "$ASSET"
+          echo "$EXPECTED_SHA256  $ASSET" | sha256sum -c -
+      - name: Publish durable public runtime release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ASSET" --clobber
+          else
+            gh release create "$TAG" "$ASSET" \
+              --target "$GITHUB_SHA" \
+              --title "Qodynex Business server runtime 0.1.0" \
+              --notes "Compiled ASP.NET Core runtime only. Source remains private. SHA-256: $EXPECTED_SHA256"
+          fi
